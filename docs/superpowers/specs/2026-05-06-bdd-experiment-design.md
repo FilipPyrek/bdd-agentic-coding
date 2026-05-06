@@ -236,6 +236,19 @@ CI runs all tests on every push and pull request. No smoke subsets, no skipping.
 - **Per-service `AGENTS.md`** — what the service does, `make run`, `make bdd`, service-specific conventions
 - Specs live in `docs/superpowers/specs/`
 
+## writing-bdd-scenarios Skill
+
+Create a `writing-bdd-scenarios` skill that codifies the BDD conventions from this spec. Its purpose: give AI agents clear rules for writing Gherkin correctly so they don't drift toward technical-style scenarios.
+
+The skill should cover:
+- Scenarios express business requirements — no HTTP status codes, no JSON, no implementation detail
+- Proper Given/When/Then structure and intent (Given = context, When = action, Then = outcome)
+- How to name features and scenarios
+- Tag policy: no tags by default, add only for concrete filtering needs
+- Examples of good and bad scenarios (drawn from this spec)
+
+**When implementing:** invoke the `writing-skills` skill before writing this skill — it provides best practices for authoring skills that AI agents follow reliably.
+
 ## Adding a New Service
 
 1. Create `services/<name>/` with the same structure as `services/users/`
