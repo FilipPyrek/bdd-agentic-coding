@@ -1,0 +1,18 @@
+[project]
+name = "orders"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi", "uvicorn[standard]"]
+
+[project.optional-dependencies]
+test = ["behave", "httpx", "shared"]
+
+[tool.uv.sources]
+shared = { workspace = true }
+
+[tool.behave]
+paths = ["features"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
