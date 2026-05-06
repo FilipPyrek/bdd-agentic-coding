@@ -10,7 +10,10 @@ package = false
 members = ["services/*", "e2e", "shared"]
 
 [dependency-groups]
-dev = ["ruff", "mypy"]
+dev = ["ruff", "mypy", "shared"]
+
+[tool.uv.sources]
+shared = { workspace = true }
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
