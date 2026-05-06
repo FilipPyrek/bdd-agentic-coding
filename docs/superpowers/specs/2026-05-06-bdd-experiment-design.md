@@ -65,6 +65,25 @@ bdd-experiment/
         └── environment.py      # base behave environment hooks (server startup/teardown, state reset)
 ```
 
+## Development Phases
+
+Implementation happens in three phases. Each phase has a hard gate before the next begins.
+
+**Phase 1 — Scaffold**
+Set up the repo structure, tooling, and documentation. No application code, no step definitions, no `.feature` files. At the end of this phase the repo compiles, `uv sync --all-packages` works, and CI is green (nothing to run yet).
+
+Deliverables: `pyproject.toml` (workspace + all members), `Makefile` (root + per-service), `.github/workflows/bdd.yml`, `shared` package skeleton, `AGENTS.md` files, `writing-bdd-scenarios` skill.
+
+**Phase 2 — Write Gherkin scenarios**
+Write all `.feature` files for every service and the E2E suite. No step definitions, no application code. Scenarios will be unimplemented — `behave` will report them as undefined, not failing. A human reviews and approves the `.feature` files as the requirements before any implementation begins.
+
+Gate: human approves all `.feature` files.
+
+**Phase 3 — Implement**
+Write step definitions in `features/steps/` and the FastAPI application code in `src/`. Driven by the failing scenarios from Phase 2. Done when `make bdd` is green.
+
+---
+
 ## Tooling
 
 - **Package manager:** `uv` — no `pip`, no `venv` directly
