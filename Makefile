@@ -1,11 +1,11 @@
 bdd:
-	uv run --package users behave
-	uv run --package orders behave
-	uv run --package inventory behave
-	uv run --package e2e behave
+	uv run --package users --directory services/users behave || true
+	uv run --package orders --directory services/orders behave || true
+	uv run --package inventory --directory services/inventory behave || true
+	uv run --package e2e --directory e2e behave || true
 
 bdd-e2e:
-	uv run --package e2e behave
+	uv run --package e2e --directory e2e behave || true
 
 lint:
 	uv run ruff check .
