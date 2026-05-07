@@ -56,8 +56,7 @@ def step_visitor_logs_in_with_email(context, email):
     )
 
 
-@then("they are told their credentials are invalid")
-def step_credentials_invalid(context):
+def _assert_invalid_credentials(context) -> None:
     assert context.response.status_code == 401, (
         f"Expected 401, got {context.response.status_code}: {context.response.text}"
     )
@@ -65,6 +64,11 @@ def step_credentials_invalid(context):
     assert "invalid" in body.get("error", "").lower(), (
         f"Expected 'invalid credentials' error, got: {body}"
     )
+
+
+@then("they are told their credentials are invalid")
+def step_credentials_invalid(context):
+    _assert_invalid_credentials(context)
 
 
 @when("Alice tries to log in with the wrong password")
@@ -77,13 +81,7 @@ def step_alice_logs_in_wrong_password(context):
 
 @then("she is told her credentials are invalid")
 def step_alice_credentials_invalid(context):
-    assert context.response.status_code == 401, (
-        f"Expected 401, got {context.response.status_code}: {context.response.text}"
-    )
-    body = context.response.json()
-    assert "invalid" in body.get("error", "").lower(), (
-        f"Expected 'invalid credentials' error, got: {body}"
-    )
+    _assert_invalid_credentials(context)
 
 
 @when('she logs in with "{email}"')
