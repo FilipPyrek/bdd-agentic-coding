@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from users.main import app
 from users.store import _store
+
 from shared.client import make_client
 
 

@@ -38,4 +38,6 @@ def login(body: LoginRequest) -> JSONResponse:
     user = _store.get(email)
     if user is None or user["password"] != body.password:
         return JSONResponse(status_code=401, content={"error": "Invalid credentials"})
-    return JSONResponse(status_code=200, content={"id": user["id"], "email": user["email"]})
+    return JSONResponse(
+        status_code=200, content={"id": user["id"], "email": user["email"]}
+    )
