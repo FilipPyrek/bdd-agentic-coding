@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from users.service import RegistrationError, register
+from users.service import AuthError, RegistrationError, get_profile, login, register
 from users.store import _store
+from users.token_store import _token_store
 
 router = APIRouter()
 
@@ -33,11 +34,22 @@ def register_user(body: RegisterRequest) -> dict | JSONResponse:
 
 
 @router.post("/login")
-def login(body: LoginRequest) -> JSONResponse:
-    email = body.email.strip().lower()
-    user = _store.get(email)
-    if user is None or user["password"] != body.password:
-        return JSONResponse(status_code=401, content={"error": "Invalid credentials"})
-    return JSONResponse(
-        status_code=200, content={"id": user["id"], "email": user["email"]}
-    )
+def login_user(body: LoginRequest) -> JSONResponse:
+    try:
+        result = login(_store, _token_store, body.email, body.password)
+        return JSONResponse(status_code=200, content=result)
+    except AuthError as exc:
+        return JSONResponse(status_code=401, content={"error": exc.message})
+
+
+@router.get("/users/{user_id}/profile")
+def get_user_profile(user_id: str, request: Request) -> JSONResponse:
+    auth_header = request.headers.get("Authorization", "")
+    token: str | None = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header[len("Bearer "):]
+    try:
+        result = get_profile(_store, _token_store, user_id, token)
+        return JSONResponse(status_code=200, content=result)
+    except AuthError as exc:
+        return JSONResponse(status_code=401, content={"error": exc.message})
