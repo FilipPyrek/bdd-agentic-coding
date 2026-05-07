@@ -21,7 +21,7 @@ class LoginRequest(BaseModel):
     password: str
 
 
-@router.post("/users", status_code=201)
+@router.post("/users", status_code=201, response_model=None)
 def register_user(body: RegisterRequest) -> dict | JSONResponse:
     try:
         return register(_store, body.name, body.email, body.password)
