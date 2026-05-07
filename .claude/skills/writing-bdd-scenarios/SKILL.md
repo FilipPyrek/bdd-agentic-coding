@@ -7,18 +7,19 @@ description: Use when adding, modifying, or removing any feature or business req
 
 ## Overview
 
-BDD scenarios are requirements, not tests. This skill guides a collaborative PM + developer
-session to produce Gherkin scenarios as executable requirements. The AI orchestrates the
-conversation, proposes scenarios, and enforces quality guardrails.
+BDD scenarios are executable acceptance criteria — requirements, not tests. This skill
+guides a collaborative PM + developer session to produce Gherkin scenarios as executable
+requirements. The AI orchestrates the conversation, proposes scenarios, and enforces
+quality guardrails.
 
 ## Checklist
 
 You MUST use todowrite to create individual todo items for EACH phase below and track
 completion as you progress. If you proceed without creating todos, you are violating this skill.
 
-1. DETECT — identify change type
-2. ANALYZE — review existing scenarios
-3. DISCOVER — ask questions until readiness check passes
+1. INTAKE — collect user's intent in their own words
+2. DISCOVER — ask questions until readiness check passes
+3. ANALYZE — review existing scenarios relevant to the discovered requirement
 4. CHALLENGE — push back on assumptions
 5. DRAFT ROUND 1 — propose happy paths
 6. DRAFT ROUND 2 — push for edge cases
@@ -140,10 +141,10 @@ moving to DRAFT.
 
 ```dot
 digraph bdd_flow {
-    "DETECT" [shape=box];
-    "Type?" [shape=diamond];
-    "ANALYZE" [shape=box];
+    "INTAKE" [shape=doublecircle];
+    "Deprecation?" [shape=diamond];
     "DISCOVER\n(until readiness check passes)" [shape=box];
+    "ANALYZE\n(relevant existing scenarios)" [shape=box];
     "CHALLENGE\n(push back on assumptions)" [shape=box];
     "Enough context?" [shape=diamond];
     "DRAFT ROUND 1\n(happy paths)" [shape=box];
@@ -156,12 +157,25 @@ digraph bdd_flow {
     "Issues found?" [shape=diamond];
     "PROPOSE COMMIT" [shape=doublecircle];
 
-    "DETECT" -> "Type?";
-    "Type?" -> "ANALYZE" [label="new/modify"];
-    "Type?" -> "ANALYZE" [label="deprecate"];
-    "ANALYZE" -> "DISCOVER\n(until readiness check passes)";
-    "DISCOVER\n(until readiness check passes)" -> "CHALLENGE\n(push back on assumptions)";
-    "CHALLENGE\n(push back on assumptions)" -> "Enough context?" ;
+    subgraph deprecation {
+        "DEP: ANALYZE\n(identify affected)" [shape=box];
+        "DEP: DISCOVER\n(confirm intent + ripple effects)" [shape=box];
+        "DEP: REVIEW\n(check what breaks)" [shape=box];
+        "DEP: WRITE\n(remove + decision log)" [shape=box];
+    }
+
+    "INTAKE" -> "Deprecation?";
+    "Deprecation?" -> "DEP: ANALYZE\n(identify affected)" [label="yes"];
+    "Deprecation?" -> "DISCOVER\n(until readiness check passes)" [label="no"];
+
+    "DEP: ANALYZE\n(identify affected)" -> "DEP: DISCOVER\n(confirm intent + ripple effects)";
+    "DEP: DISCOVER\n(confirm intent + ripple effects)" -> "DEP: REVIEW\n(check what breaks)";
+    "DEP: REVIEW\n(check what breaks)" -> "DEP: WRITE\n(remove + decision log)";
+    "DEP: WRITE\n(remove + decision log)" -> "SELF-REVIEW\n(subagent)";
+
+    "DISCOVER\n(until readiness check passes)" -> "ANALYZE\n(relevant existing scenarios)";
+    "ANALYZE\n(relevant existing scenarios)" -> "CHALLENGE\n(push back on assumptions)";
+    "CHALLENGE\n(push back on assumptions)" -> "Enough context?";
     "Enough context?" -> "DISCOVER\n(until readiness check passes)" [label="no, ask more"];
     "Enough context?" -> "DRAFT ROUND 1\n(happy paths)" [label="yes"];
     "DRAFT ROUND 1\n(happy paths)" -> "DRAFT ROUND 2\n(edge cases)";
@@ -177,15 +191,31 @@ digraph bdd_flow {
 }
 ```
 
-**DETECT** — Ask: "Are we adding, modifying, or deprecating?" Routes the flow.
+**INTAKE** — Ask: "What would you like to build or change?" Let the user describe their
+intent freely. Listen for scope, motivation, and implicit constraints.
 
-**ANALYZE** — Read existing `.feature` files in the relevant area. Summarize current
-scenario landscape. Skip only if greenfield with zero scenarios.
+After the user responds, acknowledge their intent in 1-2 sentences before moving on. This
+confirms you understood correctly and gives the user a chance to correct course early.
+Example: "So we're adding the ability for warehouse managers to approve purchase orders
+above a threshold. Let me ask some questions to flesh this out."
+
+The user's response to INTAKE already tells you the change type (new/modify/deprecate) —
+you don't need to ask explicitly. If the description clearly indicates a
+deprecation/removal, follow the deprecation shortcut. Otherwise, proceed to DISCOVER.
+Confirm briefly if ambiguous: "It sounds like we're adding a new capability — is that
+right?"
+
+**Handling user overrides:** If at any point the user says "skip ahead" or "I know what I
+want, just write it" — acknowledge the request, briefly note what may be missed (e.g.,
+"We haven't explored error cases yet"), and comply. The user is in control. However,
+still enforce the HARD-GATE: no implementation code regardless of skipping.
 
 **DISCOVER** — Ask one question at a time (multiple choice preferred): capability,
 actors, triggers, outcomes, constraints. Continue until you pass the readiness check.
+The INTAKE response gives you a head start — don't re-ask what the user already told you.
+Build on what you know.
 
-**Readiness check — you may move to CHALLENGE only when you can answer ALL of these:**
+**Readiness check — you may move to ANALYZE only when you can answer ALL of these:**
 - Who are the actors and what are their roles/permissions?
 - What triggers the behavior?
 - What does success look like from the business perspective?
@@ -198,8 +228,18 @@ with assumptions. The readiness check is the ONLY exit condition — number of q
 irrelevant. Typical discovery takes 5-8 questions. If you've asked fewer than 5, verify
 carefully that every readiness criterion is genuinely covered.
 
-**CHALLENGE** — After initial discovery, push back on at least one assumption:
-- "You said X — do you actually need all of X, or just Y?"
+**ANALYZE** — Now that you understand the requirement, read existing `.feature` files in
+the relevant area. You know what to look for. Summarize the current scenario landscape
+to the user — what exists, what overlaps, what might be affected. Skip only if greenfield
+with zero scenarios.
+
+On large projects this targeted approach avoids reading irrelevant features. You only
+look at what intersects with the now-understood requirement.
+
+**CHALLENGE** — After discovery AND analysis, push back on at least one assumption. You're
+now armed with both what the user wants AND what already exists:
+- "You said X — but existing scenario Y already handles part of this differently."
+- "Do you actually need all of X, or just Y?"
 - "What about [edge case the user hasn't mentioned]?"
 - "Is [implied requirement] actually necessary, or is it assumed?"
 - "How does this interact with [existing capability]?"
@@ -273,8 +313,10 @@ Subagent prompt template:
 
 Then ask: "Shall I commit these files?"
 
-**Deprecation shortcut:** DETECT → ANALYZE (identify affected) → DISCOVER (confirm
-intent) → REVIEW (ripple effects) → WRITE (remove + decision log).
+**Deprecation shortcut:** INTAKE → ANALYZE (identify affected scenarios) → DISCOVER
+(confirm intent, understand ripple effects) → REVIEW (check what breaks) → WRITE
+(remove + decision log) → SELF-REVIEW → PROPOSE COMMIT. Deprecations skip DRAFT rounds
+and IMPLEMENTATION NOTES — there's nothing to draft or specify when removing capability.
 
 ## Decision Log Template
 
@@ -368,11 +410,14 @@ If you're thinking any of these, you're about to violate the process:
 | "They gave a short answer, I'll just accept it" | Short answers hide assumptions. Probe: "Why? What does that look like? What error?" |
 | "Implementation notes are out of scope for BDD" | Non-scenario decisions get lost between sessions. Capture them or the implementing agent will guess wrong. |
 | "Asking about trimming is too technical for BDD" | "Should whitespace be trimmed?" is a product decision. HOW to trim is technical. |
+| "I can skip INTAKE, the user's first message is enough" | INTAKE is where you listen. Even if their first message seems complete, acknowledge and confirm understanding. |
+| "I'll analyze all features upfront to be thorough" | ANALYZE after DISCOVER — you need to know what's relevant first. |
+| "The user wants to skip ahead, so I'll drop all phases" | Comply with skipping, but note what's missed. Never skip HARD-GATE (no implementation code). |
 
 ## Exit Criteria
 
 Done when:
-1. `.feature` file(s) written and approved by the team
+1. `.feature` file(s) written
 2. Decision log written to `docs/decisions-log/<timestamp>-<feature-area>.md`
 3. Self-review subagent returned PASS (no guardrail violations)
 4. User asked whether to commit (do not commit without explicit yes)
