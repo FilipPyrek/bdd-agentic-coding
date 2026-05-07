@@ -14,6 +14,12 @@ class UserStore:
     def get(self, email: str) -> dict | None:
         return self._users.get(email.lower())
 
+    def get_by_id(self, user_id: str) -> dict | None:
+        for user in self._users.values():
+            if user["id"] == user_id:
+                return user
+        return None
+
     def clear(self) -> None:
         self._users.clear()
 
