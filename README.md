@@ -35,16 +35,16 @@ This creates a closed loop: **Spec → Scenarios → Implementation → Green sc
 ┌─────────────────────────────────────────────────────────────────┐
 │  1. REQUIREMENTS (Gherkin)                                      │
 │     - PM + developer + AI collaborate to write .feature files   │
-│     - Scenarios express business behavior in plain English       │
-│     - No HTTP codes, no JSON, no implementation detail           │
-│                                                                  │
+│     - Scenarios express business behavior in plain English      │
+│     - No HTTP codes, no JSON, no implementation detail          │
+│                                                                 │
 │  2. DESIGN (Spec documents)                                     │
 │     - Architecture, data flow, validation rules                 │
-│     - Lives in docs/superpowers/specs/                           │
-│                                                                  │
+│     - Lives in docs/superpowers/specs/                          │
+│                                                                 │
 │  3. IMPLEMENTATION (AI-driven)                                  │
 │     - AI writes code, runs `make bdd`, iterates                 │
-│     - Scenarios provide continuous pass/fail signal              │
+│     - Scenarios provide continuous pass/fail signal             │
 │     - Done when all scenarios pass                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
