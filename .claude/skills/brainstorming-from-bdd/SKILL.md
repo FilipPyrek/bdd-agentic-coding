@@ -42,7 +42,16 @@ or types a custom path.
 Invoke the `brainstorming` skill (from superpowers) with the following user message, including
 the decision log and feature file paths as file references so the engine reads them automatically:
 
-> I have a feature specification prepared, but now I would like to brainstorm implementation steps and make sure all the details are addressed. Make sure to focus on implementing everything so that when you execute the feature file, it passes successfully.
+> I have a feature specification prepared, but now I would like to brainstorm implementation steps and make sure all the details are addressed.
+> Make sure to focus on implementing everything so that when you execute the mentioned gherkin `.feature` files, they pass successfully.
+>
+> **Success criteria — ALL must be true when running `behave` on the relevant feature files:**
+> 1. All scenarios pass (exit code 0)
+> 2. Zero undefined steps (no "You can implement step definitions for undefined steps" message)
+> 3. Zero pending steps
+> 4. No skipped scenarios due to missing step definitions
+>
+> Verify with: `uv run --package <package> behave <feature_file>` — the output must show only passed scenarios with no undefined/pending/skipped markers.
 >
 > Decision log: <path to decision log>
 > Scenarios: <paths to .feature files>
