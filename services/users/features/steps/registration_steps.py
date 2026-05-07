@@ -72,3 +72,49 @@ def step_see_error_message(context, message):
     assert body.get("error") == message, (
         f"Expected error '{message}', got: {body}"
     )
+
+
+@given("a visitor with a password shorter than 6 characters")
+def step_password_too_short(context):
+    context.registered_name = "Bob"
+    context.registered_email = "bob@example.com"
+    context.registered_password = "abc"
+
+
+@given("a visitor with a password longer than 100 characters")
+def step_password_too_long(context):
+    context.registered_name = "Bob"
+    context.registered_email = "bob@example.com"
+    context.registered_password = "x" * 101
+
+
+@when("they try to register")
+def step_they_try_to_register(context):
+    payload = getattr(context, "missing_fields_payload", None)
+    if payload is None:
+        payload = {
+            "name": context.registered_name,
+            "email": context.registered_email,
+            "password": context.registered_password,
+        }
+    context.response = context.client.post("/users", json=payload)
+
+
+@then("they see an error that the password is too short")
+def step_error_password_too_short(context):
+    assert context.response.status_code == 422, (
+        f"Expected 422, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    assert body.get("field") == "password"
+    assert "short" in body.get("error", "").lower(), f"Unexpected error: {body}"
+
+
+@then("they see an error that the password is too long")
+def step_error_password_too_long(context):
+    assert context.response.status_code == 422, (
+        f"Expected 422, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    assert body.get("field") == "password"
+    assert "long" in body.get("error", "").lower(), f"Unexpected error: {body}"
