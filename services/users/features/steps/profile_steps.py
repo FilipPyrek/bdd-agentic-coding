@@ -22,7 +22,9 @@ def _assert_auth_error(context) -> None:
     )
 
 
-def _register_and_login(context, name: str, email: str, password: str) -> tuple[str, str]:
+def _register_and_login(
+    context, name: str, email: str, password: str
+) -> tuple[str, str]:
     reg = context.client.post(
         "/users",
         json={"name": name, "email": email, "password": password},
@@ -60,8 +62,12 @@ def step_she_sees_name_and_email(context):
         f"Expected 200, got {context.response.status_code}: {context.response.text}"
     )
     body = context.response.json()
-    assert body.get("name") == _ALICE_NAME, f"Expected name '{_ALICE_NAME}', got: {body}"
-    assert body.get("email") == _ALICE_EMAIL, f"Expected email '{_ALICE_EMAIL}', got: {body}"
+    assert body.get("name") == _ALICE_NAME, (
+        f"Expected name '{_ALICE_NAME}', got: {body}"
+    )
+    assert body.get("email") == _ALICE_EMAIL, (
+        f"Expected email '{_ALICE_EMAIL}', got: {body}"
+    )
 
 
 @given("a visitor who has not logged in")
