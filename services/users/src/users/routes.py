@@ -22,7 +22,7 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/users", status_code=201)
-def register_user(body: RegisterRequest) -> dict:
+def register_user(body: RegisterRequest) -> dict | JSONResponse:
     try:
         return register(_store, body.name, body.email, body.password)
     except RegistrationError as exc:
