@@ -15,6 +15,12 @@ class RegistrationError(Exception):
         self.message = message
 
 
+class AuthError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
+
+
 def register(
     store: UserStore,
     name: str | None,
@@ -54,3 +60,34 @@ def register(
     }
     store.add(user)
     return {"id": user_id, "name": normalised_name, "email": normalised_email}
+
+
+def login(
+    store: UserStore,
+    token_store,
+    email: str | None,
+    password: str | None,
+) -> dict:
+    normalised_email = email.strip().lower() if email is not None else ""
+    user = store.get(normalised_email)
+    if user is None or user["password"] != password:
+        raise AuthError("Invalid credentials")
+    token = token_store.issue(user["id"])
+    return {"token": token}
+
+
+def get_profile(
+    store: UserStore,
+    token_store,
+    user_id: str,
+    token: str | None,
+) -> dict:
+    resolved_id = token_store.get_user_id(token) if token is not None else None
+    if resolved_id is None:
+        raise AuthError("Not authorised")
+    if resolved_id != user_id:
+        raise AuthError("Not authorised")
+    user = store.get_by_id(user_id)
+    if user is None:
+        raise AuthError("Not authorised")
+    return {"id": user["id"], "name": user["name"], "email": user["email"]}
