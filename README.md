@@ -224,3 +224,9 @@ make typecheck
 | `httpx` | In-process test client (ASGI, no server needed) |
 | `ruff` | Linting and formatting |
 | `mypy` | Type checking (strict mode) |
+
+---
+
+<p align="center">
+Developed with :purple_heart: at <a href="https://github.com/verticeone/">Vertice</a>
+</p>
