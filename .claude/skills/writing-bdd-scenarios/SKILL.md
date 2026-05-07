@@ -42,26 +42,6 @@ Asking product-level questions about data handling (trimming, case sensitivity) 
 IMPLEMENTATION NOTES phase is NOT a violation — those are decisions, not code.
 </HARD-GATE>
 
-## Anti-Pattern: "This Is Too Simple To Need Discovery"
-
-Every feature goes through the full DISCOVER phase. "CRUD for inventory" sounds obvious but
-hides dozens of decisions: Who are the actors? What are the permission boundaries? What
-happens on conflict? Is delete soft or hard? What are the validation rules? What does
-"success" look like to the business?
-
-**"I already know what they want" is always wrong.** The user told you WHAT — you need to
-discover WHY, for WHOM, under WHAT constraints, and WHAT HAPPENS when things go wrong.
-
-## Anti-Pattern: "Asking the User What the Code Already Knows"
-
-Never ask the user to confirm facts that are visible in the codebase. If the user says
-"I want login tokens" and the service already has a login feature with email+password —
-you know login exists. Don't ask "Does login already exist?" That's what RECON prevents.
-
-Questions should be about **intent, constraints, and unknowns** — not about the current
-state of the code. The codebase is a primary source of truth for what IS. The user is the
-source of truth for what SHOULD BE.
-
 ## When to Use
 
 - Adding a new feature or capability
@@ -85,8 +65,7 @@ Even for API-only products — describe what the API delivers, not HTTP mechanic
 ### 2. Round 2 is mandatory
 
 AI always pushes for edge cases after happy paths. Team can defer items as "out of scope"
-(recorded in decision log) but cannot skip the round. No exceptions: not for "obvious"
-features, not for single-scenario features, not when running short on time.
+(recorded in decision log) but cannot skip the round. No exceptions.
 
 ### 3. Use roles for actors, never "the user" or "I"
 
@@ -125,28 +104,19 @@ AI drafts scenarios based on what it learned in DISCOVER. Team reacts and adjust
 ### 9. One question per message — no compound questions
 
 During DISCOVER, ask exactly ONE question per message. Wait for the answer before asking
-the next. Do NOT batch questions. Do NOT ask-and-answer in one shot. If the user
-explicitly requests batched questions, comply — but still require all mandatory topics
-answered before proceeding to CHALLENGE.
-
-A compound question like "Is SKU unique? And what about quantity — must it be non-negative?
-And for delete — hard or soft?" is THREE questions. Split them into three messages.
+the next. Do NOT batch questions. If the user explicitly requests batched questions,
+comply — but still require all mandatory topics answered before proceeding to CHALLENGE.
 
 ### 10. Probe thin answers
 
 When the user gives a one-word or one-line answer, follow up. "It should fail" — ask WHY
 it should fail, what the user experience should be, what error they'd expect. Short answers
-often hide unstated assumptions. Your job is to draw those out.
-
-Example — User says "It should fail." Good follow-up: "What should the caller see when it
-fails? An error message? Should they be able to retry? Does it matter whether the failure
-is transient or permanent?"
+often hide unstated assumptions.
 
 ### 11. Challenge assumptions before accepting direction
 
-Act like a good PM. Push back on scope, question implicit assumptions, surface hidden
-complexity. "You said X — but have you considered Y?" is required at least once before
-moving to DRAFT.
+Push back on scope, question implicit assumptions, surface hidden complexity. Required at
+least once before moving to DRAFT.
 
 ## Process Flow
 
@@ -204,55 +174,34 @@ digraph bdd_flow {
 }
 ```
 
+## Phase Details
+
 **INTAKE** — Ask: "What would you like to build or change?" Let the user describe their
 intent freely. Listen for scope, motivation, and implicit constraints.
 
-After the user responds, acknowledge their intent in 1-2 sentences before moving on. This
-confirms you understood correctly and gives the user a chance to correct course early.
-Example: "So we're adding the ability for warehouse managers to approve purchase orders
-above a threshold. Let me ask some questions to flesh this out."
+After the user responds, acknowledge their intent in 1-2 sentences before moving on.
+The user's response already tells you the change type (new/modify/deprecate) — you don't
+need to ask explicitly. Confirm briefly if ambiguous.
 
-The user's response to INTAKE already tells you the change type (new/modify/deprecate) —
-you don't need to ask explicitly. If the description clearly indicates a
-deprecation/removal, follow the deprecation shortcut. Otherwise, proceed to RECON.
-Confirm briefly if ambiguous: "It sounds like we're adding a new capability — is that
-right?"
-
-**Handling user overrides:** If at any point the user says "skip ahead" or "I know what I
-want, just write it" — acknowledge the request, briefly note what may be missed (e.g.,
-"We haven't explored error cases yet"), and comply. The user is in control. However,
-still enforce the HARD-GATE: no implementation code regardless of skipping.
+**Handling user overrides:** If the user says "skip ahead" — acknowledge, note what may be
+missed, and comply. Still enforce the HARD-GATE: no implementation code regardless.
 
 **RECON** — Silently explore the target service's codebase BEFORE asking the user anything.
-This is NOT a conversational step — do NOT output findings to the user. The goal is to
-build internal context so DISCOVER doesn't ask questions the code already answers.
+Do NOT output findings to the user. The goal is to build internal context so DISCOVER
+doesn't ask questions the code already answers.
 
-Read (silently, no output to user):
-- The service's AGENTS.md (capabilities, conventions)
+Read (silently):
+- The service's AGENTS.md
 - All existing `.feature` files in the service
-- Source code directory structure (what modules/files exist)
-- Source files directly related to the user's stated intent (e.g., if they said "login tokens," read auth-related modules)
+- Source code directory structure
+- Source files related to the user's stated intent
 
-After RECON you should know:
-- What the service already does (existing features, endpoints, models)
-- What actors/roles already exist in the system
-- What related capabilities are already implemented
-- The domain language already in use
-
-**RECON is silent.** Do not tell the user what you found. Do not summarize. Just use this
-knowledge to make DISCOVER smarter. If the user says "I want login tokens" and RECON shows
-login already exists, don't ask "does login exist?" — you already know.
+**RECON is the single source of truth for "what IS."** The user is the source of truth for
+"what SHOULD BE." Never ask the user to confirm facts the codebase already shows.
 
 **DISCOVER** — Ask one question at a time (multiple choice preferred): capability,
 actors, triggers, outcomes, constraints. Continue until you pass the readiness check.
-The INTAKE response gives you a head start — don't re-ask what the user already told you.
-Build on what you know. RECON gives you additional context — don't ask about things you
-already confirmed from the codebase.
-
-**CRITICAL: Never ask the user to confirm facts you learned from RECON.** If the code
-shows login exists with email+password, that's a fact — not a hypothesis to verify.
-Only ask about things that are genuinely unknown: new behavior, new constraints, new
-actors, ambiguous intent.
+Don't re-ask what the user told you in INTAKE or what you learned in RECON.
 
 **Readiness check — you may move to ANALYZE only when you can answer ALL of these:**
 - Who are the actors and what are their roles/permissions?
@@ -262,56 +211,27 @@ actors, ambiguous intent.
 - What happens when things go wrong (errors, edge cases)?
 - How does this interact with existing features?
 
-Answers can come from RECON (codebase facts), the user's INTAKE statement, or DISCOVER
-questions. If RECON + INTAKE already cover most criteria, DISCOVER may be very short
-(even 1-2 questions). If you've asked very few questions, verify carefully that every
-readiness criterion is genuinely covered — but if the codebase already answered them,
-that counts. Don't ask questions just to hit a number.
+Answers can come from RECON, INTAKE, or DISCOVER questions. If RECON + INTAKE already
+cover most criteria, DISCOVER may be very short (even 1-2 questions). Don't ask questions
+just to hit a number.
 
-**ANALYZE** — Now that you understand the requirement, read existing `.feature` files in
-the relevant area. You know what to look for. Summarize the current scenario landscape
-to the user — what exists, what overlaps, what might be affected. Skip only if greenfield
-with zero scenarios.
+**ANALYZE** — Read existing `.feature` files in the relevant area. Summarize to the user
+what exists, what overlaps, what might be affected. Skip only if greenfield with zero
+scenarios.
 
-On large projects this targeted approach avoids reading irrelevant features. You only
-look at what intersects with the now-understood requirement.
-
-**CHALLENGE** — After discovery AND analysis, push back on at least one assumption. You're
-now armed with both what the user wants AND what already exists:
-- "You said X — but existing scenario Y already handles part of this differently."
-- "Do you actually need all of X, or just Y?"
-- "What about [edge case the user hasn't mentioned]?"
-- "Is [implied requirement] actually necessary, or is it assumed?"
-- "How does this interact with [existing capability]?"
-
-The goal is to surface hidden complexity BEFORE drafting. A good PM doesn't just
-transcribe requirements — they interrogate them. A challenge that gets "yes, that's
-fine" without revealing anything new wasn't a real challenge. Push until you surface
-at least one previously unstated constraint, edge case, or scope clarification.
+**CHALLENGE** — Push back on at least one assumption. You're armed with both what the user
+wants AND what already exists. Push until you surface at least one previously unstated
+constraint, edge case, or scope clarification.
 
 **DRAFT ROUND 1** — Propose Feature description + happy path scenarios. Team adjusts.
 
-**DRAFT ROUND 2** — Systematically push for edge cases:
-- "What if this fails?"
-- "What if the actor doesn't have permission?"
-- "What if the input is invalid/missing?"
-- "What about concurrency/timing?"
-- "What about boundaries (zero, max, empty)?"
+**DRAFT ROUND 2** — Systematically push for edge cases: failure, permissions, invalid
+input, concurrency, boundaries. Each item: "add it" or "out of scope" (logged in
+decision log's Out of Scope section).
 
-Each item: "add it" or "out of scope" (logged). Items marked "out of scope" go to the
-decision log's Out of Scope section — they are NOT implementation notes (which capture
-how in-scope items behave at the technical boundary).
-
-**IMPLEMENTATION NOTES** — After edge cases are settled, probe for decisions that affect
-implementation but don't warrant their own scenario. Ask about:
-- Data normalization (whitespace trimming, case folding, encoding)
-- Input sanitization that's invisible to the user
-- Behavior when validated input is technically valid but degenerate (e.g., name is all spaces after trimming)
-- Whether exact boundary precision matters to the business (e.g., "must reject at exactly 128 chars" vs "reject unreasonably long input")
-
-**The boundary:** You may ask questions whose answers are **decisions** (a product owner
-would have an opinion). You may NOT ask questions whose answers are **code** (only an
-engineer would care).
+**IMPLEMENTATION NOTES** — Probe for decisions that affect implementation but don't
+warrant their own scenario: data normalization, input sanitization, degenerate input
+behavior, boundary precision.
 
 | OK to ask | NOT OK to ask |
 |-----------|---------------|
@@ -319,44 +239,37 @@ engineer would care).
 | "Is comparison case-insensitive?" | "Use `.lower()` or `.casefold()`?" |
 | "What happens if input is all spaces?" | "Store in Redis or Postgres?" |
 
-Record answers in the decision log under **Implementation Notes** (see template below).
-This section is the bridge between the BDD session and the implementing agent — without
-it, these decisions get lost between sessions.
+Record answers in the decision log under **Implementation Notes**.
 
 **REVIEW** — Read back all scenarios. Check: contradictions, duplication, language
 consistency, each scenario a complete story.
 
 **WRITE** — Write `.feature` file(s) + decision log. Nothing else.
 
-**SELF-REVIEW** — Dispatch a subagent to review the written `.feature` file(s) and decision
-log against ALL guardrails. The subagent reads the files fresh (no conversation context bias)
-and checks:
+**SELF-REVIEW** — Dispatch a subagent to review the written files against ALL guardrails.
+The subagent reads files fresh (no conversation context bias) and checks:
 
-1. No implementation detail in Gherkin (no HTTP, JSON, DB references)
+1. No implementation detail in Gherkin
 2. Actors use roles, never "the user" or "I"
 3. One business trigger per scenario
-4. Each scenario tells a complete story (understandable in isolation)
+4. Each scenario tells a complete story
 5. Then steps describe outcomes, not mechanics
-6. Consistent domain language across all scenarios
+6. Consistent domain language
 7. Feature description provides adequate context
-8. Decision log is complete (context, decisions, implementation notes, out of scope, affected scenarios)
-
-The subagent returns a list of issues or "PASS". If issues are found, fix them and re-run
-the self-review. Only proceed to PROPOSE COMMIT after a clean pass.
+8. Decision log is complete
 
 Subagent prompt template:
 > "You are a skeptical product manager reading these scenarios for the first time, with
 > no prior context about the conversation that produced them. Read the following files:
-> [list .feature and decision log paths]. Review them against these quality criteria:
-> [criteria above]. For each issue found, report the file, line, and which criterion is
-> violated. If all criteria pass, respond with PASS."
+> [list paths]. Review them against these quality criteria: [criteria above]. For each
+> issue found, report the file, line, and which criterion is violated. If all criteria
+> pass, respond with PASS."
 
-Then ask: "Shall I commit these files?"
+Only proceed to PROPOSE COMMIT after a clean pass.
 
-**Deprecation shortcut:** INTAKE → ANALYZE (identify affected scenarios) → DISCOVER
-(confirm intent, understand ripple effects) → REVIEW (check what breaks) → WRITE
-(remove + decision log) → SELF-REVIEW → PROPOSE COMMIT. Deprecations skip DRAFT rounds
-and IMPLEMENTATION NOTES — there's nothing to draft or specify when removing capability.
+**Deprecation shortcut:** INTAKE → ANALYZE (identify affected) → DISCOVER (confirm intent,
+ripple effects) → REVIEW (what breaks) → WRITE (remove + decision log) → SELF-REVIEW →
+PROPOSE COMMIT. Skip DRAFT rounds and IMPLEMENTATION NOTES.
 
 ## Decision Log Template
 
@@ -381,12 +294,6 @@ Write to `docs/decisions-log/<unix-timestamp>-<feature-area>.md`:
 Decisions that don't warrant their own scenario but must be respected during implementation:
 
 - <Behavior> — <what was decided>
-
-Example entries:
-- Names: trim leading/trailing whitespace before validation
-- Email: normalize to lowercase for comparison
-- Empty-after-trim: treat as "missing" (same error as blank input)
-- Exact boundaries (min/max values): cover with unit tests at boundary values
 
 ## Out of Scope
 
@@ -434,27 +341,17 @@ If you're thinking any of these, you're about to violate the process:
 
 | Thought | Reality |
 |---------|---------|
-| "The PM already knows what they want" | Round 2 exists because first-pass requirements always have gaps |
 | "This is too simple for the full process" | Simple features hide edge cases. Follow all phases. |
-| "I'll just write the Gherkin directly" | AI proposes first so humans can react, not invent from scratch |
-| "We don't need a decision log for this" | Decision logs prevent relitigating resolved decisions next sprint |
-| "Let me add HTTP details so the developer knows" | Step definitions own transport. Gherkin is for business behavior. |
-| "This is just a test" | These are requirements. The executable part is a bonus. |
-| "Round 2 is overkill for this feature" | Round 2 is mandatory. No exceptions. Defer items as out-of-scope if needed. |
-| "CRUD is obvious, I know what they need" | CRUD hides dozens of decisions. Discovery surfaces them. Ask questions. |
-| "I'll write the scenarios and step defs together" | Step defs are implementation. This skill produces ONLY .feature files. |
-| "Let me implement this while I'm at it" | Implementation is a separate task. Stop after .feature + decision log. |
-| "I have enough context from the request" | You have WHAT. You need WHY, for WHOM, under WHAT constraints. Ask. |
-| "I'll ask all my questions at once to save time" | One question per message. Wait for answers. Discovery is a conversation. |
-| "I'll ask about Create, Read, Update, Delete in one go" | That's 4 questions. Split them. Each operation deserves its own exploration. |
-| "They gave a short answer, I'll just accept it" | Short answers hide assumptions. Probe: "Why? What does that look like? What error?" |
-| "Implementation notes are out of scope for BDD" | Non-scenario decisions get lost between sessions. Capture them or the implementing agent will guess wrong. |
-| "Asking about trimming is too technical for BDD" | "Should whitespace be trimmed?" is a product decision. HOW to trim is technical. |
-| "I can skip INTAKE, the user's first message is enough" | INTAKE is where you listen. Even if their first message seems complete, acknowledge and confirm understanding. |
-| "I'll analyze all features upfront to be thorough" | RECON skims broadly; ANALYZE goes deep after DISCOVER on relevant scenarios only. |
-| "The user wants to skip ahead, so I'll drop all phases" | Comply with skipping, but note what's missed. Never skip HARD-GATE (no implementation code). |
-| "I should ask if login already exists" | Read the code first (RECON). Don't ask the user about facts the codebase can confirm. |
-| "Let me confirm what the service already does" | RECON already told you. Don't waste the user's time confirming codebase facts. |
+| "We don't need a decision log for this" | Decision logs prevent relitigating resolved decisions next sprint. |
+| "I'll just write the Gherkin directly" | AI proposes first so humans can react, not invent from scratch. |
+| "I'll ask all my questions at once" | One question per message. Discovery is a conversation. |
+| "They gave a short answer, I'll accept it" | Short answers hide assumptions. Probe deeper. |
+| "Let me add HTTP details for the developer" | Step definitions own transport. Gherkin is for business behavior. |
+| "Round 2 is overkill for this feature" | Round 2 is mandatory. Defer items as out-of-scope if needed. |
+| "I should ask if X already exists" | Read the code first (RECON). Don't ask about codebase facts. |
+| "Let me implement this while I'm at it" | This skill produces ONLY .feature files + decision log. Stop there. |
+| "I have enough context from the request" | You have WHAT. You need WHY, for WHOM, under WHAT constraints. |
+| "Implementation notes are out of scope for BDD" | Non-scenario decisions get lost between sessions. Capture them. |
 
 ## Exit Criteria
 
