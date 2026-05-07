@@ -11,6 +11,17 @@ _BOB_PASSWORD = "bobpass1"
 _BOB_NAME = "Bob"
 
 
+def _assert_auth_error(context) -> None:
+    assert context.response.status_code == 401, (
+        f"Expected 401, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    error = body.get("error", "").lower()
+    assert "authorised" in error or "authorized" in error, (
+        f"Expected 'not authorised' error, got: {body}"
+    )
+
+
 def _register_and_login(context, name: str, email: str, password: str) -> tuple[str, str]:
     reg = context.client.post(
         "/users",
@@ -55,24 +66,22 @@ def step_she_sees_name_and_email(context):
 
 @given("a visitor who has not logged in")
 def step_visitor_not_logged_in(context):
-    pass
+    reg = context.client.post(
+        "/users",
+        json={"name": _ALICE_NAME, "email": _ALICE_EMAIL, "password": _ALICE_PASSWORD},
+    )
+    assert reg.status_code == 201, f"Registration failed: {reg.text}"
+    context.target_user_id = reg.json()["id"]
 
 
 @when("they try to view a profile")
 def step_visitor_tries_view_profile(context):
-    context.response = context.client.get("/users/some-nonexistent-id/profile")
+    context.response = context.client.get(f"/users/{context.target_user_id}/profile")
 
 
 @then("they are told they must be logged in")
 def step_must_be_logged_in(context):
-    assert context.response.status_code == 401, (
-        f"Expected 401, got {context.response.status_code}: {context.response.text}"
-    )
-    body = context.response.json()
-    error = body.get("error", "").lower()
-    assert "authorised" in error or "authorized" in error, (
-        f"Expected 'not authorised' error, got: {body}"
-    )
+    _assert_auth_error(context)
 
 
 @given("Alice and Bob have both registered and logged in")
@@ -95,11 +104,4 @@ def step_alice_requests_bob_profile(context):
 
 @then("she is told she is not authorised")
 def step_not_authorised(context):
-    assert context.response.status_code == 401, (
-        f"Expected 401, got {context.response.status_code}: {context.response.text}"
-    )
-    body = context.response.json()
-    error = body.get("error", "").lower()
-    assert "authorised" in error or "authorized" in error, (
-        f"Expected 'not authorised' error, got: {body}"
-    )
+    _assert_auth_error(context)
