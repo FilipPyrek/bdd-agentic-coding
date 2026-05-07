@@ -159,3 +159,21 @@ def step_blank_name(context):
     context.registered_name = "   "
     context.registered_email = "eve@example.com"
     context.registered_password = "eve12345"
+
+
+@given("a visitor without all required fields")
+def step_missing_fields(context):
+    context.missing_fields_payload = {}
+
+
+@then("they see errors indicating which fields are missing")
+def step_errors_for_missing_fields(context):
+    assert context.response.status_code == 422, (
+        f"Expected 422, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    detail = body.get("detail", [])
+    missing_field_names = {
+        entry["loc"][-1] for entry in detail if entry.get("type") == "missing"
+    }
+    assert missing_field_names, f"Expected missing field errors, got: {body}"
