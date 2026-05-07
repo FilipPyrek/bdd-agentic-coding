@@ -18,16 +18,17 @@ You MUST use todowrite to create individual todo items for EACH phase below and 
 completion as you progress. If you proceed without creating todos, you are violating this skill.
 
 1. INTAKE — collect user's intent in their own words
-2. DISCOVER — ask questions until readiness check passes
-3. ANALYZE — review existing scenarios relevant to the discovered requirement
-4. CHALLENGE — push back on assumptions
-5. DRAFT ROUND 1 — propose happy paths
-6. DRAFT ROUND 2 — push for edge cases
-7. IMPLEMENTATION NOTES — capture non-scenario decisions
-8. REVIEW — check all scenarios together
-9. WRITE — write .feature file(s) + decision log
-10. SELF-REVIEW — dispatch subagent to review outputs against guardrails
-11. PROPOSE COMMIT — ask user if they want to commit
+2. RECON — silently explore the target service's codebase
+3. DISCOVER — ask questions the codebase doesn't answer
+4. ANALYZE — review existing scenarios relevant to the discovered requirement
+5. CHALLENGE — push back on assumptions
+6. DRAFT ROUND 1 — propose happy paths
+7. DRAFT ROUND 2 — push for edge cases
+8. IMPLEMENTATION NOTES — capture non-scenario decisions
+9. REVIEW — check all scenarios together
+10. WRITE — write .feature file(s) + decision log
+11. SELF-REVIEW — dispatch subagent to review outputs against guardrails
+12. PROPOSE COMMIT — ask user if they want to commit
 
 <HARD-GATE>
 Do NOT write step definitions, implementation code, Python files, or invoke any implementation
@@ -50,6 +51,16 @@ happens on conflict? Is delete soft or hard? What are the validation rules? What
 
 **"I already know what they want" is always wrong.** The user told you WHAT — you need to
 discover WHY, for WHOM, under WHAT constraints, and WHAT HAPPENS when things go wrong.
+
+## Anti-Pattern: "Asking the User What the Code Already Knows"
+
+Never ask the user to confirm facts that are visible in the codebase. If the user says
+"I want login tokens" and the service already has a login feature with email+password —
+you know login exists. Don't ask "Does login already exist?" That's what RECON prevents.
+
+Questions should be about **intent, constraints, and unknowns** — not about the current
+state of the code. The codebase is a primary source of truth for what IS. The user is the
+source of truth for what SHOULD BE.
 
 ## When to Use
 
@@ -143,6 +154,7 @@ moving to DRAFT.
 digraph bdd_flow {
     "INTAKE" [shape=doublecircle];
     "Deprecation?" [shape=diamond];
+    "RECON\n(silent codebase exploration)" [shape=box];
     "DISCOVER\n(until readiness check passes)" [shape=box];
     "ANALYZE\n(relevant existing scenarios)" [shape=box];
     "CHALLENGE\n(push back on assumptions)" [shape=box];
@@ -166,13 +178,14 @@ digraph bdd_flow {
 
     "INTAKE" -> "Deprecation?";
     "Deprecation?" -> "DEP: ANALYZE\n(identify affected)" [label="yes"];
-    "Deprecation?" -> "DISCOVER\n(until readiness check passes)" [label="no"];
+    "Deprecation?" -> "RECON\n(silent codebase exploration)" [label="no"];
 
     "DEP: ANALYZE\n(identify affected)" -> "DEP: DISCOVER\n(confirm intent + ripple effects)";
     "DEP: DISCOVER\n(confirm intent + ripple effects)" -> "DEP: REVIEW\n(check what breaks)";
     "DEP: REVIEW\n(check what breaks)" -> "DEP: WRITE\n(remove + decision log)";
     "DEP: WRITE\n(remove + decision log)" -> "SELF-REVIEW\n(subagent)";
 
+    "RECON\n(silent codebase exploration)" -> "DISCOVER\n(until readiness check passes)";
     "DISCOVER\n(until readiness check passes)" -> "ANALYZE\n(relevant existing scenarios)";
     "ANALYZE\n(relevant existing scenarios)" -> "CHALLENGE\n(push back on assumptions)";
     "CHALLENGE\n(push back on assumptions)" -> "Enough context?";
@@ -201,7 +214,7 @@ above a threshold. Let me ask some questions to flesh this out."
 
 The user's response to INTAKE already tells you the change type (new/modify/deprecate) —
 you don't need to ask explicitly. If the description clearly indicates a
-deprecation/removal, follow the deprecation shortcut. Otherwise, proceed to DISCOVER.
+deprecation/removal, follow the deprecation shortcut. Otherwise, proceed to RECON.
 Confirm briefly if ambiguous: "It sounds like we're adding a new capability — is that
 right?"
 
@@ -210,10 +223,36 @@ want, just write it" — acknowledge the request, briefly note what may be misse
 "We haven't explored error cases yet"), and comply. The user is in control. However,
 still enforce the HARD-GATE: no implementation code regardless of skipping.
 
+**RECON** — Silently explore the target service's codebase BEFORE asking the user anything.
+This is NOT a conversational step — do NOT output findings to the user. The goal is to
+build internal context so DISCOVER doesn't ask questions the code already answers.
+
+Read (silently, no output to user):
+- The service's AGENTS.md (capabilities, conventions)
+- All existing `.feature` files in the service
+- Source code directory structure (what modules/files exist)
+- Source files directly related to the user's stated intent (e.g., if they said "login tokens," read auth-related modules)
+
+After RECON you should know:
+- What the service already does (existing features, endpoints, models)
+- What actors/roles already exist in the system
+- What related capabilities are already implemented
+- The domain language already in use
+
+**RECON is silent.** Do not tell the user what you found. Do not summarize. Just use this
+knowledge to make DISCOVER smarter. If the user says "I want login tokens" and RECON shows
+login already exists, don't ask "does login exist?" — you already know.
+
 **DISCOVER** — Ask one question at a time (multiple choice preferred): capability,
 actors, triggers, outcomes, constraints. Continue until you pass the readiness check.
 The INTAKE response gives you a head start — don't re-ask what the user already told you.
-Build on what you know.
+Build on what you know. RECON gives you additional context — don't ask about things you
+already confirmed from the codebase.
+
+**CRITICAL: Never ask the user to confirm facts you learned from RECON.** If the code
+shows login exists with email+password, that's a fact — not a hypothesis to verify.
+Only ask about things that are genuinely unknown: new behavior, new constraints, new
+actors, ambiguous intent.
 
 **Readiness check — you may move to ANALYZE only when you can answer ALL of these:**
 - Who are the actors and what are their roles/permissions?
@@ -223,10 +262,11 @@ Build on what you know.
 - What happens when things go wrong (errors, edge cases)?
 - How does this interact with existing features?
 
-If ANY answer is "I don't know yet" or "I'm guessing" — keep asking. Do NOT move forward
-with assumptions. The readiness check is the ONLY exit condition — number of questions is
-irrelevant. Typical discovery takes 5-8 questions. If you've asked fewer than 5, verify
-carefully that every readiness criterion is genuinely covered.
+Answers can come from RECON (codebase facts), the user's INTAKE statement, or DISCOVER
+questions. If RECON + INTAKE already cover most criteria, DISCOVER may be very short
+(even 1-2 questions). If you've asked very few questions, verify carefully that every
+readiness criterion is genuinely covered — but if the codebase already answered them,
+that counts. Don't ask questions just to hit a number.
 
 **ANALYZE** — Now that you understand the requirement, read existing `.feature` files in
 the relevant area. You know what to look for. Summarize the current scenario landscape
@@ -411,8 +451,10 @@ If you're thinking any of these, you're about to violate the process:
 | "Implementation notes are out of scope for BDD" | Non-scenario decisions get lost between sessions. Capture them or the implementing agent will guess wrong. |
 | "Asking about trimming is too technical for BDD" | "Should whitespace be trimmed?" is a product decision. HOW to trim is technical. |
 | "I can skip INTAKE, the user's first message is enough" | INTAKE is where you listen. Even if their first message seems complete, acknowledge and confirm understanding. |
-| "I'll analyze all features upfront to be thorough" | ANALYZE after DISCOVER — you need to know what's relevant first. |
+| "I'll analyze all features upfront to be thorough" | RECON skims broadly; ANALYZE goes deep after DISCOVER on relevant scenarios only. |
 | "The user wants to skip ahead, so I'll drop all phases" | Comply with skipping, but note what's missed. Never skip HARD-GATE (no implementation code). |
+| "I should ask if login already exists" | Read the code first (RECON). Don't ask the user about facts the codebase can confirm. |
+| "Let me confirm what the service already does" | RECON already told you. Don't waste the user's time confirming codebase facts. |
 
 ## Exit Criteria
 
