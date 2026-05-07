@@ -1,4 +1,4 @@
-# Executable BDD Requirements for AI-Driven Development
+# Executable Requirements for Spec Driven Development
 
 <p align="center">
 
@@ -118,17 +118,12 @@ The glue code in `features/steps/` translates business language into HTTP calls 
 
 Each scenario validates a single cause-and-effect. Complex workflows use multiple scenarios in sequence.
 
-### Roles, not "the user"
 
-Scenarios use named actors (Alice, Bob) or roles. This communicates permissions and context without relying on a generic "I" or "the user."
-
-## AI Skills (`.claude/skills/`)
+## AI Skills
 
 This repo includes custom AI skills that encode the development workflow. They are loaded automatically when an AI agent works in this codebase, ensuring consistent process regardless of which session or which human is involved.
 
 ### `writing-bdd-scenarios` — Requirements Capture
-
-**Location:** `.claude/skills/writing-bdd-scenarios/SKILL.md`
 
 The entry point of the development lifecycle. This skill orchestrates a collaborative PM + developer + AI session to produce Gherkin scenarios as executable requirements. It enforces a structured 12-phase process:
 
