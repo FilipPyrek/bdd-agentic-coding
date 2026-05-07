@@ -45,3 +45,30 @@ def step_can_log_in(context):
     assert response.status_code == 200, (
         f"Expected 200 from /login, got {response.status_code}: {response.text}"
     )
+
+
+@given('a user has already registered with "{email}"')
+def step_user_already_registered(context, email):
+    context.client.post(
+        "/users",
+        json={"name": "Existing User", "email": email, "password": "existing123"},
+    )
+
+
+@when('a visitor tries to register with "{email}"')
+def step_visitor_tries_register_with_email(context, email):
+    context.response = context.client.post(
+        "/users",
+        json={"name": "New User", "email": email, "password": "newpass123"},
+    )
+
+
+@then('they see an error: "{message}"')
+def step_see_error_message(context, message):
+    assert context.response.status_code == 422, (
+        f"Expected 422, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    assert body.get("error") == message, (
+        f"Expected error '{message}', got: {body}"
+    )
