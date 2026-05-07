@@ -3,7 +3,7 @@
 <p align="center">
 
   <img width="256" height="256" alt="BDD+Claude" src="https://github.com/user-attachments/assets/adf22a72-5dde-4b82-8bc6-d5a709a57a6a" />
-  
+
 </p>
 
 
@@ -229,14 +229,3 @@ make typecheck
 | `httpx` | In-process test client (ASGI, no server needed) |
 | `ruff` | Linting and formatting |
 | `mypy` | Type checking (strict mode) |
-
-## Design Specs
-
-Detailed design documents live in `docs/superpowers/specs/`:
-
-| Spec | Description |
-|------|-------------|
-| `2026-05-06-bdd-experiment-design.md` | Overall architecture, conventions, and rationale |
-| `2026-05-07-user-registration-design.md` | Registration feature: data layer, service layer, routes, validation rules |
-| `2026-05-07-login-token-and-profile-design.md` | Login tokens, profile access, authorization |
-| `2026-05-07-writing-bdd-scenarios-skill-design.md` | The AI skill for collaborative scenario writing |
