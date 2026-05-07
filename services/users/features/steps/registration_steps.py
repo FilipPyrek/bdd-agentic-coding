@@ -118,3 +118,44 @@ def step_error_password_too_long(context):
     body = context.response.json()
     assert body.get("field") == "password"
     assert "long" in body.get("error", "").lower(), f"Unexpected error: {body}"
+
+
+@given("a visitor with an invalid email address")
+def step_invalid_email(context):
+    context.registered_name = "Carol"
+    context.registered_email = "not-an-email"
+    context.registered_password = "carol123"
+
+
+@then("they see an error that the email is invalid")
+def step_error_email_invalid(context):
+    assert context.response.status_code == 422, (
+        f"Expected 422, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    assert body.get("field") == "email"
+    assert "invalid" in body.get("error", "").lower(), f"Unexpected error: {body}"
+
+
+@given("a visitor with a name longer than 100 characters")
+def step_name_too_long(context):
+    context.registered_name = "A" * 101
+    context.registered_email = "dave@example.com"
+    context.registered_password = "dave1234"
+
+
+@then("they see an error that the name is too long")
+def step_error_name_too_long(context):
+    assert context.response.status_code == 422, (
+        f"Expected 422, got {context.response.status_code}: {context.response.text}"
+    )
+    body = context.response.json()
+    assert body.get("field") == "name"
+    assert "long" in body.get("error", "").lower(), f"Unexpected error: {body}"
+
+
+@given("a visitor with a blank name")
+def step_blank_name(context):
+    context.registered_name = "   "
+    context.registered_email = "eve@example.com"
+    context.registered_password = "eve12345"
