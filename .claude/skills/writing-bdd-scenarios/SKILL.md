@@ -70,3 +70,57 @@ Same concept = same word everywhere. Clarify ambiguous terms in the Feature desc
 ### 8. AI proposes first, team edits
 
 AI drafts scenarios based on what it learned in DISCOVER. Team reacts and adjusts.
+
+## Process Flow
+
+```dot
+digraph bdd_flow {
+    "DETECT" [shape=box];
+    "Type?" [shape=diamond];
+    "ANALYZE" [shape=box];
+    "DISCOVER" [shape=box];
+    "DRAFT ROUND 1\n(happy paths)" [shape=box];
+    "DRAFT ROUND 2\n(edge cases)" [shape=box];
+    "Round 2 complete?" [shape=diamond];
+    "REVIEW" [shape=box];
+    "WRITE" [shape=doublecircle];
+
+    "DETECT" -> "Type?";
+    "Type?" -> "ANALYZE" [label="new/modify"];
+    "Type?" -> "ANALYZE" [label="deprecate"];
+    "ANALYZE" -> "DISCOVER";
+    "DISCOVER" -> "DRAFT ROUND 1\n(happy paths)";
+    "DRAFT ROUND 1\n(happy paths)" -> "DRAFT ROUND 2\n(edge cases)";
+    "DRAFT ROUND 2\n(edge cases)" -> "Round 2 complete?";
+    "Round 2 complete?" -> "DRAFT ROUND 2\n(edge cases)" [label="more to explore"];
+    "Round 2 complete?" -> "REVIEW" [label="done"];
+    "REVIEW" -> "WRITE";
+}
+```
+
+**DETECT** — Ask: "Are we adding, modifying, or deprecating?" Routes the flow.
+
+**ANALYZE** — Read existing `.feature` files in the relevant area. Summarize current
+scenario landscape. Skip only if greenfield with zero scenarios.
+
+**DISCOVER** — Ask one question at a time (multiple choice preferred): capability,
+actors, triggers, outcomes, constraints. Continue until enough context to draft.
+
+**DRAFT ROUND 1** — Propose Feature description + happy path scenarios. Team adjusts.
+
+**DRAFT ROUND 2** — Systematically push for edge cases:
+- "What if this fails?"
+- "What if the actor doesn't have permission?"
+- "What if the input is invalid/missing?"
+- "What about concurrency/timing?"
+- "What about boundaries (zero, max, empty)?"
+
+Each item: "add it" or "out of scope" (logged).
+
+**REVIEW** — Read back all scenarios. Check: contradictions, duplication, language
+consistency, each scenario a complete story.
+
+**WRITE** — Write `.feature` file(s) + decision log. Commit.
+
+**Deprecation shortcut:** DETECT → ANALYZE (identify affected) → DISCOVER (confirm
+intent) → REVIEW (ripple effects) → WRITE (remove + decision log).
