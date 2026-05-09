@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from behave import given, then, when
+from behave.runner import Context
 
 _ALICE_EMAIL = "alice@example.com"
 _ALICE_PASSWORD = "secret123"
 _ALICE_NAME = "Alice"
 
 
-def _register_alice(context, email: str = _ALICE_EMAIL) -> None:
+def _register_alice(context: Context, email: str = _ALICE_EMAIL) -> None:
     context.client.post(
         "/users",
         json={"name": _ALICE_NAME, "email": email, "password": _ALICE_PASSWORD},
@@ -15,17 +16,17 @@ def _register_alice(context, email: str = _ALICE_EMAIL) -> None:
 
 
 @given("Alice has registered an account")
-def step_alice_registered(context):
+def step_alice_registered(context: Context) -> None:
     _register_alice(context)
 
 
 @given('Alice has registered with "{email}"')
-def step_alice_registered_with_email(context, email):
+def step_alice_registered_with_email(context: Context, email: str) -> None:
     _register_alice(context, email=email)
 
 
 @when("Alice logs in with her email and password")
-def step_alice_logs_in(context):
+def step_alice_logs_in(context: Context) -> None:
     context.response = context.client.post(
         "/login",
         json={"email": _ALICE_EMAIL, "password": _ALICE_PASSWORD},
@@ -33,7 +34,7 @@ def step_alice_logs_in(context):
 
 
 @then("she receives a token")
-def step_she_receives_token(context):
+def step_she_receives_token(context: Context) -> None:
     assert context.response.status_code == 200, (
         f"Expected 200, got {context.response.status_code}: {context.response.text}"
     )
@@ -44,19 +45,19 @@ def step_she_receives_token(context):
 
 
 @given('no account exists for "{email}"')
-def step_no_account_for_email(context, email):
+def step_no_account_for_email(context: Context, email: str) -> None:
     pass
 
 
 @when('a visitor tries to log in with "{email}"')
-def step_visitor_logs_in_with_email(context, email):
+def step_visitor_logs_in_with_email(context: Context, email: str) -> None:
     context.response = context.client.post(
         "/login",
         json={"email": email, "password": "anypassword"},
     )
 
 
-def _assert_invalid_credentials(context) -> None:
+def _assert_invalid_credentials(context: Context) -> None:
     assert context.response.status_code == 401, (
         f"Expected 401, got {context.response.status_code}: {context.response.text}"
     )
@@ -67,12 +68,12 @@ def _assert_invalid_credentials(context) -> None:
 
 
 @then("they are told their credentials are invalid")
-def step_credentials_invalid(context):
+def step_credentials_invalid(context: Context) -> None:
     _assert_invalid_credentials(context)
 
 
 @when("Alice tries to log in with the wrong password")
-def step_alice_logs_in_wrong_password(context):
+def step_alice_logs_in_wrong_password(context: Context) -> None:
     context.response = context.client.post(
         "/login",
         json={"email": _ALICE_EMAIL, "password": "wrongpassword"},
@@ -80,12 +81,12 @@ def step_alice_logs_in_wrong_password(context):
 
 
 @then("she is told her credentials are invalid")
-def step_alice_credentials_invalid(context):
+def step_alice_credentials_invalid(context: Context) -> None:
     _assert_invalid_credentials(context)
 
 
 @when('she logs in with "{email}"')
-def step_she_logs_in_with_email(context, email):
+def step_she_logs_in_with_email(context: Context, email: str) -> None:
     context.response = context.client.post(
         "/login",
         json={"email": email, "password": _ALICE_PASSWORD},

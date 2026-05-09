@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from behave import given, then, when
+from behave.runner import Context
 
 _ALICE_EMAIL = "alice@example.com"
 _ALICE_PASSWORD = "secret123"
@@ -11,7 +12,7 @@ _BOB_PASSWORD = "bobpass1"
 _BOB_NAME = "Bob"
 
 
-def _assert_auth_error(context) -> None:
+def _assert_auth_error(context: Context) -> None:
     assert context.response.status_code == 401, (
         f"Expected 401, got {context.response.status_code}: {context.response.text}"
     )
@@ -23,7 +24,7 @@ def _assert_auth_error(context) -> None:
 
 
 def _register_and_login(
-    context, name: str, email: str, password: str
+    context: Context, name: str, email: str, password: str
 ) -> tuple[str, str]:
     reg = context.client.post(
         "/users",
@@ -42,14 +43,14 @@ def _register_and_login(
 
 
 @given("Alice has registered and logged in")
-def step_alice_registered_and_logged_in(context):
+def step_alice_registered_and_logged_in(context: Context) -> None:
     context.alice_id, context.alice_token = _register_and_login(
         context, _ALICE_NAME, _ALICE_EMAIL, _ALICE_PASSWORD
     )
 
 
 @when("she requests her profile")
-def step_she_requests_profile(context):
+def step_she_requests_profile(context: Context) -> None:
     context.response = context.client.get(
         f"/users/{context.alice_id}/profile",
         headers={"Authorization": f"Bearer {context.alice_token}"},
@@ -57,7 +58,7 @@ def step_she_requests_profile(context):
 
 
 @then("she sees her name and email address")
-def step_she_sees_name_and_email(context):
+def step_she_sees_name_and_email(context: Context) -> None:
     assert context.response.status_code == 200, (
         f"Expected 200, got {context.response.status_code}: {context.response.text}"
     )
@@ -71,7 +72,7 @@ def step_she_sees_name_and_email(context):
 
 
 @given("a visitor who has not logged in")
-def step_visitor_not_logged_in(context):
+def step_visitor_not_logged_in(context: Context) -> None:
     reg = context.client.post(
         "/users",
         json={"name": _ALICE_NAME, "email": _ALICE_EMAIL, "password": _ALICE_PASSWORD},
@@ -81,17 +82,17 @@ def step_visitor_not_logged_in(context):
 
 
 @when("they try to view a profile")
-def step_visitor_tries_view_profile(context):
+def step_visitor_tries_view_profile(context: Context) -> None:
     context.response = context.client.get(f"/users/{context.target_user_id}/profile")
 
 
 @then("they are told they must be logged in")
-def step_must_be_logged_in(context):
+def step_must_be_logged_in(context: Context) -> None:
     _assert_auth_error(context)
 
 
 @given("Alice and Bob have both registered and logged in")
-def step_alice_and_bob_registered_and_logged_in(context):
+def step_alice_and_bob_registered_and_logged_in(context: Context) -> None:
     context.alice_id, context.alice_token = _register_and_login(
         context, _ALICE_NAME, _ALICE_EMAIL, _ALICE_PASSWORD
     )
@@ -101,7 +102,7 @@ def step_alice_and_bob_registered_and_logged_in(context):
 
 
 @when("Alice requests Bob's profile")
-def step_alice_requests_bob_profile(context):
+def step_alice_requests_bob_profile(context: Context) -> None:
     context.response = context.client.get(
         f"/users/{context.bob_id}/profile",
         headers={"Authorization": f"Bearer {context.alice_token}"},
@@ -109,5 +110,5 @@ def step_alice_requests_bob_profile(context):
 
 
 @then("she is told she is not authorised")
-def step_not_authorised(context):
+def step_not_authorised(context: Context) -> None:
     _assert_auth_error(context)

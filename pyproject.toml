@@ -24,3 +24,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = "behave.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["registration_steps", "login_steps", "profile_steps"]
+disable_error_code = ["untyped-decorator"]
