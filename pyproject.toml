@@ -20,3 +20,7 @@ select = ["E", "F", "I"]
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+module = "behave.*"
+ignore_missing_imports = true
