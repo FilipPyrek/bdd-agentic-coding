@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from users.service import AuthError, RegistrationError, get_profile, login, register
-from users.store import _store
+from users.store import UserRecord, _store
 from users.token_store import _token_store
 
 router = APIRouter()
@@ -23,7 +23,7 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/users", status_code=201, response_model=None)
-def register_user(body: RegisterRequest) -> dict | JSONResponse:
+def register_user(body: RegisterRequest) -> UserRecord | JSONResponse:
     try:
         return register(_store, body.name, body.email, body.password)
     except RegistrationError as exc:

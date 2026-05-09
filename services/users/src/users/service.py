@@ -3,7 +3,8 @@ from __future__ import annotations
 import re
 import uuid
 
-from users.store import UserStore
+from users.store import UserRecord, UserStore
+from users.token_store import TokenStore
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -26,7 +27,7 @@ def register(
     name: str | None,
     email: str | None,
     password: str | None,
-) -> dict:
+) -> UserRecord:
     normalised_name = name.strip() if name is not None else None
     normalised_email = email.strip().lower() if email is not None else None
 
@@ -52,7 +53,7 @@ def register(
         raise RegistrationError("password", "Password is too long")
 
     user_id = str(uuid.uuid4())
-    user = {
+    user: UserRecord = {
         "id": user_id,
         "name": normalised_name,
         "email": normalised_email,
@@ -64,10 +65,10 @@ def register(
 
 def login(
     store: UserStore,
-    token_store,
+    token_store: TokenStore,
     email: str | None,
     password: str | None,
-) -> dict:
+) -> UserRecord:
     normalised_email = email.strip().lower() if email is not None else ""
     user = store.get(normalised_email)
     if user is None or user["password"] != password:
@@ -78,10 +79,10 @@ def login(
 
 def get_profile(
     store: UserStore,
-    token_store,
+    token_store: TokenStore,
     user_id: str,
     token: str | None,
-) -> dict:
+) -> UserRecord:
     resolved_id = token_store.get_user_id(token) if token is not None else None
     if resolved_id is None:
         raise AuthError("Not authorised")
